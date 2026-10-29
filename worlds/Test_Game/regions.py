@@ -17,7 +17,7 @@ def create_all_regions(world: APTestGame_World) -> None:
     game_board = Region("Game Board", world.player, world.multiworld)
 
     #If this game features multiple regions in the future, I would have to put them together here, but for now, I will simple do this
-    regions = game_board
+    regions = [game_board]
 
     #It seems I can access the world's option file via world.options
 
