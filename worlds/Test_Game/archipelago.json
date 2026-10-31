@@ -1,5 +1,5 @@
 {
-    "Game": "Test_Game",
+    "game": "Test_Game",
     "minimum_ap_version": "0.6.8",
     "world_version": "0.1",
     "authors": ["Doop Soup"]

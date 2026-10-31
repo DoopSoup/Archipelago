@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from BaseClasses import Entrance, Region
-from worlds.Test_Game.tests.TEST_game_board import game_board
+from game_board import game_board
 
 if TYPE_CHECKING:
     from .world import APTestGame_World
