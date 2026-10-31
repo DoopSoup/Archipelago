@@ -33,8 +33,7 @@ def create_item_with_correct_classification(world: APTestGame_World, name: str) 
 def create_all_items(world: APTestGame_World) -> None:
     itempool: list[Item] = []
     
-    for location in world.location_names:
-        if location.startswith("Key"):
-            itempool.append(world.create_filler())
+    for _ in range(1, world.max_keys + 1):
+        itempool.append(world.create_item("Key"))
 
     world.multiworld.itempool += itempool
