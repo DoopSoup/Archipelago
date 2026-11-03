@@ -22,4 +22,4 @@ def set_all_location_rules(world: APTestGame_World) -> None:
     pass
 
 def set_completion_condition(world: APTestGame_World) -> None:
-    world.set_completion_rule(Has("Flag", world.required_flags))
+    world.set_completion_rule(Has("Flag", world.options.required_flags.value))

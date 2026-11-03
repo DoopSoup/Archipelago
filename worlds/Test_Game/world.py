@@ -24,7 +24,7 @@ class APTestGame_World(World):
     location_name_to_id = locations.LOCATION_NAME_TO_ID
     item_name_to_id = items.ITEM_NAME_TO_ID
 
-    origin_region_name = "Game Board"
+    origin_region_name = "Starting Tiles"
 
     board: game_board.game_board
 
@@ -42,7 +42,7 @@ class APTestGame_World(World):
 
 
     def create_regions(self) -> None:
-        regions.create_all_regions(self)
+        regions.create_and_connect_regions(self)
         locations.create_all_locations(self)
 
     def set_rules(self) -> None:
@@ -70,13 +70,13 @@ class APTestGame_World(World):
         #Location:Item Dict
         Item_Placement = {
             location.name: location.item.name
-            for location in self.get_filled_locations(self.player)
+            for location in self.multiworld.get_filled_locations(self.player)
         }
 
         self.board.update_with_item_placements(self, Item_Placement)
 
         #Output path
         mod_name = self.multiworld.get_out_file_name_base(self.player)
-        output_path = os.path.join(output_directory + mod_name + ".zip")
+        output_path = os.path.join(output_directory, mod_name + ".json")
 
         game_board.generate_game_board_file(self, self.board, output_path)

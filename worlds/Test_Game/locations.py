@@ -6,7 +6,7 @@ from BaseClasses import ItemClassification, Location
 
 # [ ] Create this
 from . import items
-from .game_board import TILE_TYPES
+from .game_board import TILE_TYPES, game_board
 
 if TYPE_CHECKING:
     from .world import APTestGame_World
@@ -38,13 +38,20 @@ def create_regular_locations(world: APTestGame_World) -> None:
     #game_board.add_locations(get_location_names_with_ids(list("Key #" + str(index) for index in range(1, 101))), APTestGame_Location)
     for cell in game_board.get_cells():
         if cell.cell_type == TILE_TYPES["Key"]:
-            cell_layer = max(abs(cell.x), abs(cell.y))
-            layer = world.get_region("Layer_" + str(cell_layer))
+            # cell_layer = max(abs(cell.x), abs(cell.y))
+            # if cell_layer < 2:
+            #     layer = world.get_region("Starting Tiles")
+            # else:
+            #     layer = world.get_region("Layer_" + str(cell_layer))
+
+            layer = world.get_region("Starting Tiles")
+            
 
             location_name = cell.get_type_name((cell.x, cell.y)) + " (" + str(cell.x) + ", " + str(cell.y) + ")"
 
             layer.add_locations({location_name: cell.id}, APTestGame_Location)
             LOCATION_NAME_TO_ID.update({location_name: cell.id})
+            world.location_name_to_id.update({location_name: cell.id})
 
 
 def create_events(world: APTestGame_World) -> None:
@@ -57,7 +64,8 @@ def create_events(world: APTestGame_World) -> None:
     for cell in game_board.get_cells():
         if cell.cell_type == TILE_TYPES["Flag"]:
             cell_layer = max(abs(cell.x), abs(cell.y))
-            layer = world.get_region("Layer_" + str(cell_layer))
+            #layer = world.get_region("Layer_" + str(cell_layer))
+            layer = world.get_region("Starting Tiles")
 
             location_name = cell.get_type_name((cell.x, cell.y)) + " (" + str(cell.x) + ", " + str(cell.y) + ")"
 

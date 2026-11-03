@@ -25,8 +25,11 @@ class InitialWeights(OptionCounter):
     Initial weights for different types of tiles on the game board.
     Tiles other than flags or keys become decreasingly likely to appear as more keys are collected.
     """
-    Default = {
-        "Empty": 5,
+    max = 100
+    min = 0
+
+    default = {
+        "Empty": 60,
         "Wall": 10,
         "Key": 25,
         "Skull": 5,
