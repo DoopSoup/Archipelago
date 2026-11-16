@@ -39,5 +39,9 @@ def connect_regions(world: APTestGame_World) -> None:
     for i in range(2, max_size - 1):
         current_layer = world.get_region("Layer_" + str(i))
         next_layer = world.get_region("Layer_" + str(i + 1))
-        current_layer.connect(next_layer, "Layer " + str(i + 1) + " Unlocked", lambda state: state.has("Key", world.player, (i * 4) + (i - 1)))
-        print(world.game + " Connected region: " + current_layer.name + " to region: " + next_layer.name + " with key requirement: " + str((i * 4) + (i - 1)))
+
+        required_keys = (i * 4) + (i - 1)
+
+        current_layer.connect(next_layer, "Layer " + str(i + 1) + " Unlocked", lambda state, keys = required_keys: state.has("Key", world.player, keys))
+
+        print(world.game + " Connected region: " + current_layer.name + " to region: " + next_layer.name + " with key requirement: " + str(required_keys))      

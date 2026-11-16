@@ -5,21 +5,21 @@ from typing import Any
 from worlds.AutoWorld import World
 
 from . import items, locations, regions, rules, web_world, game_board
-from . import options as APTestGame_Options
+from . import options as PathWanderer_Options
 
-class APTestGame_World(World):
+class PathWanderer_World(World):
     #Description of game for webhost
     """
     A little character randomly moves around in a grid-based world which gets larger when they receive enough keys.
     A bad idea for a game, but a good learning experience.
     """
 
-    game = "APTestGame"
+    game = "PathWanderer"
 
-    web = web_world.APTestGameWebWorld()
+    web = web_world.PathWandererWebWorld()
 
-    options_dataclass = APTestGame_Options.APTestGame_Options
-    options: APTestGame_Options.APTestGame_Options # type: ignore
+    options_dataclass = PathWanderer_Options.PathWanderer_Options
+    options: PathWanderer_Options.PathWanderer_Options # type: ignore
 
     location_name_to_id = locations.LOCATION_NAME_TO_ID
     item_name_to_id = items.ITEM_NAME_TO_ID
@@ -29,19 +29,13 @@ class APTestGame_World(World):
     board: game_board.game_board
 
     def generate_early(self) -> None:
-        #Read options file; determine maximum board size
-        #Generate game board
-        #Pass board size to regions
-        #Pass key and flag locations to locations (give pointer to xy coords for id)
-        #(Generate game)
-        #Update game board, all non-key, non-flag item tiles receive new tile id
-        #Move game board to final zip file
         
         self.board = game_board.generate_game_board(self)
         
 
 
     def create_regions(self) -> None:
+        self.explicit_indirect_conditions = False
         regions.create_and_connect_regions(self)
         locations.create_all_locations(self)
 
@@ -52,7 +46,7 @@ class APTestGame_World(World):
         items.create_all_items(self)
 
 
-    def create_item(self, name: str) -> items.APTestGame_Item:
+    def create_item(self, name: str) -> items.PathWanderer_Item:
         return items.create_item_with_correct_classification(self, name)
 
     def get_filler_item_name(self) -> str:
@@ -69,7 +63,7 @@ class APTestGame_World(World):
 
         #Location:Item Dict
         Item_Placement = {
-            location.name: location.item.name
+            location.name: location.item.name # type: ignore
             for location in self.multiworld.get_filled_locations(self.player)
         }
 

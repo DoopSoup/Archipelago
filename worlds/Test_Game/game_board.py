@@ -3,36 +3,30 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from world import APTestGame_World
+    from world import PathWanderer_World
+    import tiles
 
-TILE_TYPES : dict[str, int] = {
-    "Empty" : 0,
-    "Wall" : 1,
-    "Key" : 2,
-    "Flag" : 3,
-    "Skull" : 4,
-    "ap_item" : 5,
-}
-initial_size = 2
-initial_keys = 8
+INITIAL_SIZE = 2
+INITIAL_KEYS = 8
+
 
 class game_cell:
-    def __init__(self, cell_type: int, x: int, y: int, id: int):
+    def __init__(self, cell_type: tiles.game_tile, x: int, y: int, id: int):
         self.cell_type = cell_type
         self.x = x
         self.y = y
         self.id = id
         self.location_name = ""
 
-    def get_type_name(self, coords: tuple[int, int]) -> str:
-        for name, type_id in TILE_TYPES.items():
+    def get_type_name(self) -> str:
+        for type_name, type_id in tiles.TILE_TYPES:
             if type_id == self.cell_type:
-                return name
+                return type_name
         return "Unknown"
 
     def get_cell_info(self) -> dict:
         return {
-            "type": self.get_type_name((self.x, self.y)),
+            "type": self.get_type_name(),
             "coords" : (self.x, self.y),
             "id" : self.id,
             "location_name" : self.location_name
@@ -41,60 +35,80 @@ class game_cell:
     def set_location_name(self, name: str) -> None:
         self.location_name = name
 
+
+
 class game_board:
-    #features a matrix of cells representing the game board.
-    #The matrix has a size determined by (size*2 -1, size*2 -1) with the cell in the center being considered the origin, (0,0).
-    def __init__(self, size: int):
+    #currently features a matrix of cells, with the origin at (0, 0) and the top left corner at (-size + 1, -size + 1), 
+    def __init__(self, size: int = INITIAL_SIZE):
         self.size = size
-        self.cells = [[game_cell(TILE_TYPES["Empty"], x - size + 1, y - size + 1, 0) for x in range(size * 2 - 1)] for y in range(size * 2 - 1)]
+        self.cells : dict[int, list[game_cell]] = {}
         self.origin = self.cells[size - 1][size - 1]
+                    
+        id_counter = 1
+        for dx in range(-1, 2):
+            for dy in range(-1, 2):
+                self.set_cell((dx, dy), tiles.tile_empty())
+                if dx == 0 and dy == 0:
+                    continue
 
-    def set_cell(self, coords: tuple[int, int], cell_type: int, id: int) -> None:
+                self.set_cell((dx, dy), tiles.tile_key(), id_counter)
+                id_counter += 1
+
+    def set_cell(self, coords: tuple[int, int], cell_type: tiles.game_tile, location_id: int = 0) -> None:
         x, y = coords
-        #Needs to adapt coordinates from origin-based to matrix-based
-        matrix_x = x + self.size - 1
-        matrix_y = y + self.size - 1
-        self.cells[matrix_y][matrix_x].cell_type = cell_type
-        self.cells[matrix_y][matrix_x].id = id
-        #print("Setting cell at", coords, "to type", cell_type)
-
-    def export(self) -> list[dict]:
-        board_list = []
-        for y, row in enumerate(self.cells):
-            for x, cell in enumerate(row):
-                board_list.append(cell.get_cell_info())
-        return board_list
-
-    def get_cell(self, coords: tuple[int, int]) -> game_cell:
-        x, y = coords
-        matrix_x = x + self.size - 1
-        matrix_y = y + self.size - 1
-        return self.cells[matrix_y][matrix_x]
-
-    def get_cells(self, type: int = -1) -> list[game_cell]:
-        if type < 0:
-            return [cell for row in self.cells for cell in row]
+        layer = cell_type.tile_layer
+        #check if there is a cell at the given coordinates.
+        #If so, update the cell type and id. If not, create a new cell at the given coordinates with the given type and id.
+        if self.get_cell(layer, coords) is not None:
+            cell = self.get_cell(layer, coords)
+            cell.cell_type = cell_type
+            cell.id = location_id
         else:
-            return [cell for row in self.cells for cell in row if cell.cell_type == type]
+            cell = game_cell(cell_type, x, y, location_id)
+            self.cells[layer].append(cell)
 
-    def update_with_item_placements(self, world: APTestGame_World, item_placement: dict[str, str]) -> None:
+    def export(self) -> dict[int, list[game_cell]]:
+        return self.cells
+
+    def get_cell(self, layer: int, coords: tuple[int, int]) -> game_cell:
+        x, y = coords
+        if layer in self.cells:
+            for cell in self.cells[layer]:
+                if cell.x == x and cell.y == y:
+                    return cell
+        return None # type: ignore
+
+    def get_cells(self, type: int = -1) -> dict[int, list[game_cell]]:
+        if type < 0:
+            return self.cells
+        else:
+            output : dict[int, list[game_cell]] = {}
+
+            for layer in self.cells:
+                output.update({layer: []})
+                for cell in self.cells[layer]:
+                    if cell.cell_type == type:
+                        output[layer].append(cell)
+            
+            return output
+
+    def update_with_item_placements(self, world: PathWanderer_World, item_placement: dict[str, str]) -> None:
         for location_name, item_name in item_placement.items():
             #First, extract the coordinates from the location name string, which is in the format "Location (x, y)"
             cell_coords = location_name.split("(")[-1].split(")")[0].split(",")
             cell_coords = (int(cell_coords[0]), int(cell_coords[1]))
 
-            self.get_cell(cell_coords).set_location_name(location_name)
+            target_cell = self.get_cell(tiles.TILE_LAYERS["Items"], cell_coords)
+            target_cell.set_location_name(location_name)
 
             #Check whether or not the item is local to this game, if it is not, then the tile type should be set to 5 for ap_item
             if item_name in world.item_name_to_id.keys():
-                tile_type = TILE_TYPES[item_name]
+                target_cell.cell_type = tiles.TILE_TYPES[item_name]()
             else:
-                tile_type = TILE_TYPES["ap_item"]
+                target_cell.cell_type = tiles.tile_ap_item()
 
-def get_tile_ID(str: str) -> int:
-    return TILE_TYPES.get(str, -1)
 
-def generate_game_board(world: APTestGame_World):
+def generate_game_board(world: PathWanderer_World):
     """
     Creates a matrix of tile types representing the game board.
     Generation starts at tile (0, 0).
@@ -102,8 +116,8 @@ def generate_game_board(world: APTestGame_World):
 
     #Determines the maximum possible size of the game board based on the number of keys available
     max_keys = world.options.max_keys
-    current_keys = max_keys - initial_keys
-    current_size = initial_size
+    current_keys = max_keys - INITIAL_KEYS
+    current_size = INITIAL_SIZE
 
     i = 0
     while current_keys - (4 + i) > 0:
@@ -111,21 +125,9 @@ def generate_game_board(world: APTestGame_World):
         current_size += 1
         i += 1
 
-    final_size = current_size
+    final_size = current_size +1
 
-    #Sets up the initial board, a 9x9 grid. 1 empty cell surrounded by 8 keys
-    board = game_board(current_size)
-    #Place the initial empty cell at the origin
-    board.set_cell((0, 0), TILE_TYPES["Empty"], 1)
-
-    #Place the initial keys around the origin
-    id_counter = 2
-    for dx in range(-1, 2):
-        for dy in range(-1, 2):
-            if dx == 0 and dy == 0:
-                continue
-            board.set_cell((dx, dy), TILE_TYPES["Key"], id_counter)
-            id_counter += 1
+    board = game_board()
 
     #Expands the board until the board size reaches the final size determined earlier
     #Randomly places tiles on each newly generated layer with weights determined by the world options and remaining keys
@@ -133,36 +135,40 @@ def generate_game_board(world: APTestGame_World):
     expand_board_to_fill(world, board, final_size)
     return board
 
-def expand_board_to_fill(world: APTestGame_World, board: game_board, final_size: int) -> game_board:
-    current_size = initial_size
-    current_keys = initial_keys
+def expand_board_to_fill(world: PathWanderer_World, board: game_board, final_size: int) -> game_board:
+    current_size = INITIAL_SIZE
+    current_keys = INITIAL_KEYS
     max_keys = world.options.max_keys
 
     id_counter = 9
     layer_cost = 4
     required_keys = layer_cost
 
+    flag_count = 0
+
     while current_size < final_size:
             placed_tiles = 0
             layer_cost += 1
             required_keys += layer_cost
             current_size += 1
-    
+
+            #Retrieve the tile weights from the world options and calculate the total weight for normalization
+            tile_weights = tiles.get_rando_weights(world)
+            total_weight = sum(tile_weights.values())
+
             #print("Beginning Layer: "+ str(current_size) + " with " + str(current_keys) + " keys placed and " + str(required_keys) + " required keys.")
             for dx in range(-current_size + 1, current_size):
                 for dy in range(-current_size + 1, current_size):
                     #Determines if the current tile has already been placed in a previous layer, and if so, skips it
                     if abs(dx) < current_size - 1 and abs(dy) < current_size - 1:
                         continue
-    
-                    key_scalar = (current_keys / max_keys) / 2
-                    #print(key_scalar)
-                    #Get the random weights for each tile type
-                    tile_weights = world.options.initial_weights
-                    total_weight = sum(tile_weights.values())
+
+                    #Key Scalar is a value representative of the percentage of keys placed.
+                    key_scalar = (current_keys / max_keys)
+
                     adjusted_weights = {}
                     
-                    for tile in TILE_TYPES:
+                    for tile in tiles.TILE_TYPES:
                         #If the given tile has a weight assigned in options It's target weight is adjusted according to its type
                         initial_weight = 0
     
@@ -171,27 +177,16 @@ def expand_board_to_fill(world: APTestGame_World, board: game_board, final_size:
                             initial_weight = tile_weights[tile]
     
                         #current_weight = tile_weights[tile]
-                        if tile == "Key":
-                            current_weight = (initial_weight + key_scalar * (total_weight - initial_weight))
+                        if tile == tiles.TILE_TYPES["Key"]:
+                            current_weight = (initial_weight + (key_scalar/2) * (total_weight - initial_weight))
                         else:
-                            current_weight = (initial_weight + key_scalar * (0 - initial_weight))
+                            current_weight = (initial_weight + (key_scalar/2) * (0 - initial_weight))
     
                         adjusted_weights.update({tile: current_weight/total_weight})
                     #print("Adjusted weights:", adjusted_weights)
+
                     #Select a tile based on the weights
-    
-                    rand_val = world.multiworld.random.random()
-                    cumulative_weight = 0
-                    selected_tile : str = "Empty"
-                    for tile, weight in adjusted_weights.items():
-                        if tile == "Flag":
-                            continue
-    
-                        cumulative_weight += weight
-                        if rand_val < cumulative_weight:
-                            #print("I've decided! This tile will be a " + tile)
-                            selected_tile = tile
-                            break
+                    selected_tile = get_random_tile(world, adjusted_weights)
     
                     #If the selected tile is a key, there is a (current_keys / max_keys) chance of actually placing it, otherwise it is replaced with a flag
                     if selected_tile == "Key":
@@ -222,13 +217,35 @@ def expand_board_to_fill(world: APTestGame_World, board: game_board, final_size:
                         #print("No more keys can be placed. This tile will be a Flag instead.")
                         current_keys -= 1
                         selected_tile = "Flag"
-    
-                    board.set_cell((dx, dy), TILE_TYPES[selected_tile], id_counter)
+
+                    if selected_tile == "Flag":
+                        flag_count += 1
+
+                    board.set_cell((dx, dy), tiles.TILE_TYPES[selected_tile](), id_counter)
                     id_counter += 1
                     placed_tiles += 1
-                        
+
+    board.size = final_size
+ 
+    if flag_count < world.options.required_flags:
+        raise Exception("Not enough flags were placed on the board. Please lower the required flags to " + str(flag_count) + " (or less) or increase the number of keys available.")
+
     return board
 
+def get_random_tile(world: PathWanderer_World, weights: dict) -> str:
+    rand_val = world.multiworld.random.random()
+    cumulative_weight = 0
+    selected_tile : str = "Empty"
+    for tile, weight in weights.items():
+        if tile == "Flag":
+            continue
+
+        cumulative_weight += weight
+        if rand_val < cumulative_weight:
+            selected_tile = tile
+            break
+
+    return selected_tile
 
 def generate_game_board_file(world, board, path: str = "nil") -> None:
     from pathlib import Path
@@ -237,7 +254,8 @@ def generate_game_board_file(world, board, path: str = "nil") -> None:
     board_size = board.size
     
     output_file = {"board_size" : board_size, 
-                    "board": board.export()}
+                    "board": board.export(),
+                    "cell_types": tiles.TILE_TYPES}
     #Creates a file in the Output folder named game_board_.json containing the board size and the board matrix
     if path == "nil":
         path = Path(__file__).parent / "Output" / "game_board_" + world.multiworld.seed_name + ".json"
