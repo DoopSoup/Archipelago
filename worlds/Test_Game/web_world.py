@@ -1,8 +1,8 @@
 from BaseClasses import Tutorial
 from worlds.AutoWorld import WebWorld
 
-class APTestGameWebWorld(WebWorld):
-    game = "APTestGame"
+class PathWandererWebWorld(WebWorld):
+    game = "PathWanderer"
 
     theme = "stone"
 

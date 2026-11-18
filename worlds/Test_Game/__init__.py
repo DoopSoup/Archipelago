@@ -1,1 +1,1 @@
-from .world import APTestGame_World as APTestGame_World
+from .world import PathWanderer_World as PathWanderer_World

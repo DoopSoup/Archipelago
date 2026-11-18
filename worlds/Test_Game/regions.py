@@ -6,13 +6,13 @@ from BaseClasses import Entrance, Region
 from .game_board import game_board
 
 if TYPE_CHECKING:
-    from .world import APTestGame_World
+    from .world import PathWanderer_World
 
-def create_and_connect_regions(world: APTestGame_World) -> None:
+def create_and_connect_regions(world: PathWanderer_World) -> None:
     create_all_regions(world)
     connect_regions(world)
 
-def create_all_regions(world: APTestGame_World) -> None:
+def create_all_regions(world: PathWanderer_World) -> None:
     #This game only really has a single region.
     #In theory, I could have a dynamic region system that detects how many times the board can be expanded (either by doing some simple math based on the keys or by having a preset limit)
     starting_tiles = Region("Starting Tiles", world.player, world.multiworld)
@@ -28,7 +28,7 @@ def create_all_regions(world: APTestGame_World) -> None:
 
     world.multiworld.regions += regions
 
-def connect_regions(world: APTestGame_World) -> None:
+def connect_regions(world: PathWanderer_World) -> None:
     max_size = world.board.size
     print(world.game + " Connecting regions..." + " (Max size: " + str(max_size) + ")")
 

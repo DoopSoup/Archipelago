@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from BaseClasses import Item, ItemClassification
 
 if TYPE_CHECKING:
-    from .world import APTestGame_World
+    from .world import PathWanderer_World
 
 
 ITEM_NAME_TO_ID = {
@@ -18,19 +18,19 @@ DEFAULT_ITEM_CLASSIFICATION: dict[str, ItemClassification] = {
     "Flag": ItemClassification.progression,
 }
 
-class APTestGame_Item(Item):
-    game = "APTestGame"
+class PathWanderer_Item(Item):
+    game = "PathWanderer"
 
-def get_random_filler_item_name(world: APTestGame_World) -> str:
+def get_random_filler_item_name(world: PathWanderer_World) -> str:
     #There will be more items later... trust...
     return "Key"
 
-def create_item_with_correct_classification(world: APTestGame_World, name: str) -> APTestGame_Item:
+def create_item_with_correct_classification(world: PathWanderer_World, name: str) -> PathWanderer_Item:
     classification = DEFAULT_ITEM_CLASSIFICATION[name]
 
-    return APTestGame_Item(name, classification, ITEM_NAME_TO_ID[name], world.player)
+    return PathWanderer_Item(name, classification, ITEM_NAME_TO_ID[name], world.player)
 
-def create_all_items(world: APTestGame_World) -> None:
+def create_all_items(world: PathWanderer_World) -> None:
     itempool: list[Item] = []
     
     for _ in range(1, world.options.max_keys + 1):
